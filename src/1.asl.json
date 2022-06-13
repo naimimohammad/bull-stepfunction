@@ -1,0 +1,120 @@
+{
+    "StartAt": "P",
+    "States": {
+        "P":{
+            "Type": "Pass",
+            "Next":"V"
+        },
+        "V":{
+            "Type": "Pass",
+            "Next":"CC"
+        },
+        "CC":{
+            "Type": "Choice",
+            "Choices":[
+                {
+                    "Variable": "$.ds",
+                    "IsPresent": true,
+                    "Next": "BBF"
+                  }
+            ],
+            "Default":"PP"
+
+        },
+        "BBF":{
+            "Type": "Pass",
+            "End":true
+        },
+        "PP":{
+            "Next": "Z",
+            "Type": "Parallel",
+            "Branches": [
+                {
+                    "StartAt":"CC",
+                    "States":{
+                        "CC":{
+                            "Type":"Pass",
+                            "Next": "FF"
+                        },
+                        "FF":{
+                            "Type": "Pass",
+                            "End":true
+                        }
+                    }
+                },
+                {
+                    "StartAt":"PP1",
+                    "States":{
+                        "PP1":{
+                            "Type":"Parallel",
+                            "Next": "FF1",
+                            "Branches": [{
+                                "StartAt":"GG",
+                                "States":{
+                                    "GG":{
+                                        "Type":"Pass",
+                                        "End":true
+                                    }
+                                }
+                            }
+                            ,
+                            {
+                                "StartAt": "Map3",
+                                "States": {
+                                    
+                                    "Map3":{
+                                        "Type": "Map",
+                                        "End":true,
+                                        "ItemsPath": "$.d",
+                                        "Iterator":{
+                                            "StartAt": "Wait1",
+                                            "States":{
+                                                "Wait1":{
+                                                    "Type":"Wait",
+                                                    "Seconds":1,
+                                                    "Next": "CV"
+                                                },
+                                                "CV":{
+                                                    "Type": "Pass",
+                                                    "End":true
+                                                }
+                                            }
+                                        }
+
+                                    }
+                                }
+                            }
+                        ]
+                        },
+                        "FF1":{
+                            "Type": "Pass",
+                            "End":true
+                        }
+                    }
+                }
+            ]
+
+            
+        },
+        "Z":{
+            "Type": "Pass",
+            "Next": "H"
+        },
+        "H":{
+            "Type": "Map",
+            "End":true,
+            "ItemsPath":"$[0].d",
+            "Iterator":{
+                "StartAt":"BB",
+                "States":{
+                "BB":{
+                    "Type":"Pass",
+                    "End":true
+                }
+            }
+            }
+        }
+       
+     
+    }
+}
