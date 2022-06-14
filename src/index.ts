@@ -5,7 +5,7 @@ import t from "typy";
 import _ from "lodash";
 import jp from "jsonpath";
 import {Choice} from 'aws-sf-choice'
-
+import V from './libs/newdb'
 export class StepFunction {
   workflow: any;
   workflowId!: string;
@@ -38,8 +38,10 @@ export class StepFunction {
   init(data: any) {
     let workflowId = uuidv4();
     this.workflow[workflowId] = this.jsonPath;
-    this.typeId[workflowId] = "root";
-    this.posId[workflowId] = "States";
+    
+
+    V.setTypeId(workflowId,'root')
+    V.setPosId(workflowId,'States')
     // DB.setWorkflowToID(this.jsonPath,workflowId) // location of json to workflowId
     // DB.setTypeOfworkflow(workflowId,"root") // set this workflow as root pos
     // DB.setPositionInworkflow(workflowId,`States.${this.workflow.StartAt}`) // set position of this workflow
@@ -66,13 +68,20 @@ export class StepFunction {
     switch (type) {
       case "Map": {
         let workflowId: string = uuidv4();
-        this.typeId[workflowId] = type;
-        this.IdinId[workflowId] = upperId;
-        this.posId[workflowId] = posPath;
+        
+
+
+        V.setTypeId(workflowId,type)
+        V.setIdinId(workflowId,upperId)
+        V.setPosId(workflowId,posPath)
+
         let ItemsPath = jsonData.ItemsPath;
         let MapData = jp.query(data, ItemsPath)[0];
         console.log("Map Data", MapData);
         this.IdLength[workflowId] = MapData.length;
+
+        V.setIdLength(workflowId,MapData.length)
+
         MapData.forEach((datain: any, index: number) => {
           let nposPath = `${posPath}.Iterator.States.${jsonData.Iterator.StartAt}`;
           let ntype = t(this.workflow, nposPath).safeObject.Type;
@@ -89,11 +98,16 @@ export class StepFunction {
       }
       case "Parallel": {
         let workflowId: string = uuidv4();
-        this.typeId[workflowId] = type;
-        this.IdinId[workflowId] = upperId;
-        this.posId[workflowId] = posPath;
+       
+
+        V.setTypeId(workflowId,type)
+        V.setIdinId(workflowId,upperId)
+        V.setPosId(workflowId,posPath)
+
         console.log("WWWWW", jsonData, posPath,workflowId,type);
-        this.IdLength[workflowId] = jsonData.Branches.length;
+
+        V.setIdLength(workflowId,jsonData.Branches.length)
+
         jsonData.Branches.forEach((States: any, index: number) => {
           let njsonData = States;
           let nposPath = `${posPath}.Branches[${index}].States.${njsonData.StartAt}`;
@@ -111,31 +125,42 @@ export class StepFunction {
       }
       case "Task": {
         let workflowId: string = uuidv4();
-        this.typeId[workflowId] = type;
-        this.IdinId[workflowId] = upperId;
-        this.posId[workflowId] = posPath;
+    
         // DB.setTypeOfworkflow(workflowId,type)
         // DB.setWorkflowInWorkflow(workflowId,upperId)
         /*
+
+        
                     input filter data here 
                 */
+                    V.setTypeId(workflowId,type)
+                    V.setIdinId(workflowId,upperId)
+                    V.setPosId(workflowId,posPath)
+
+
         this.resources[jsonData.resources].add(data, { jobId: workflowId });
         break;
       }
       case "Wait": {
         let workflowId: string = uuidv4();
-        this.typeId[workflowId] = type;
-        this.IdinId[workflowId] = upperId;
-        this.posId[workflowId] = posPath;
+     
+
+        V.setTypeId(workflowId,type)
+        V.setIdinId(workflowId,upperId)
+        V.setPosId(workflowId,posPath)
+
         await this.sleep(jsonData.Seconds);
         this.onCompleteState(type, upperId, data, workflowId);
         break;
       }
       case "Pass": {
         let workflowId: string = uuidv4();
-        this.typeId[workflowId] = type;
-        this.IdinId[workflowId] = upperId;
-        this.posId[workflowId] = posPath;
+       
+
+        V.setTypeId(workflowId,type)
+        V.setIdinId(workflowId,upperId)
+        V.setPosId(workflowId,posPath)
+
         this.onCompleteState(type, upperId, data, workflowId);
         break;
       }
@@ -154,7 +179,7 @@ export class StepFunction {
   jobComplete(job: any) {
     this.onCompleteState(
       "Task",
-      this.IdinId[job.opts.jobId],
+      V.getIdinId(job.opts.jobId),
       job.data,
       job.opts.jobId
     );
@@ -167,37 +192,39 @@ export class StepFunction {
   resultTracker(id: string) {}
 
   onCompleteState(type: string, upperId: string, data: any, currentId: string) {
-    if (this.typeId[currentId] == "root") {
+    if (V.getTypeId(currentId) == "root") {
       console.log("workflow finished");
-      console.log(
-        "type:",
-        this.typeId,
-        "positon:",
-        this.posId,
-        "IdinId:",
-        this.IdinId,
-        "length:",
-        this.IdLength,
-        "Result:",
-        this.IdResult
-      );
+      // console.log(
+      //   "type:",
+      //   this.typeId,
+      //   "positon:",
+      //   this.posId,
+      //   "IdinId:",
+      //   this.IdinId,
+      //   "length:",
+      //   this.IdLength,
+      //   "Result:",
+      //   this.IdResult
+      // );
     } else {
       if (this.endDetection(currentId)) {
-        switch (this.typeId[upperId]) {
+        switch (V.getTypeId(upperId)) {
           case "Parallel": {
-            console.log(this.posId[currentId]);
-            this.IdResult[currentId] = data;
-            this.EndIdinId[currentId] = upperId;
-            let ParallelResult = this.getObjKey(this.EndIdinId, upperId);
+          
+
+            V.setIdResult(currentId,data)
+            V.setEndIdinId(currentId,upperId)
+
+            let ParallelResult = this.getObjKey(V.getAllEndID(), upperId);
             console.log("SSSS", ParallelResult);
-            if (ParallelResult.length == this.IdLength[upperId]) {
+            if (ParallelResult.length == V.getIdLength(upperId)) {
               ParallelResult = ParallelResult.map(
-                (item: any) => this.IdResult[item]
+                (item: any) =>V.getIdResult(item)
               );
-              this.IdResult[upperId] = ParallelResult;
+              V.setIdResult(upperId, ParallelResult)
               this.onCompleteState(
-                this.typeId[upperId],
-                this.IdinId[upperId],
+               V.getTypeId(upperId),
+               V.getIdinId(upperId),
                 ParallelResult,
                 upperId
               );
@@ -205,16 +232,20 @@ export class StepFunction {
             break;
           }
           case "Map": {
-            this.IdResult[currentId] = data;
-            this.EndIdinId[currentId] = upperId;
-            let MapResult = this.getObjKey(this.EndIdinId, upperId);
+         
+            V.setIdResult(currentId,data)
+            V.setEndIdinId(currentId,upperId)
+
+            let MapResult = this.getObjKey(V.getAllEndID(), upperId);
             console.log("FFFFFFF", currentId, upperId);
-            if (MapResult.length == this.IdLength[upperId]) {
-              MapResult = MapResult.map((item: any) => this.IdResult[item]);
-              this.IdResult[upperId] = MapResult;
+            if (MapResult.length == V.getIdLength(upperId)) {
+              console.log("Map Done!")
+              MapResult = MapResult.map((item: any) => V.getIdResult(item));
+              V.setIdResult(upperId, MapResult)
+
               this.onCompleteState(
-                this.typeId[upperId],
-                this.IdinId[upperId],
+                V.getTypeId(upperId),
+                V.getIdinId(upperId),
                 MapResult,
                 upperId
               );
@@ -222,10 +253,12 @@ export class StepFunction {
             break;
           }
           default: {
-            this.IdResult[currentId] = data;
+
+            V.setIdResult(currentId,data)
+
             this.onCompleteState(
-              this.typeId[upperId],
-              this.IdinId[upperId],
+              V.getTypeId(upperId),
+                V.getIdinId(upperId),
               data,
               upperId
             );
@@ -244,13 +277,13 @@ export class StepFunction {
   }
 
   endDetection(Id: string) {
-    let jsonData = t(this.workflow, this.posId[Id]).safeObject;
+    let jsonData = t(this.workflow, V.getPosId(Id)).safeObject;
     return _.has(jsonData, "End");
   }
   nextDetection(Id: string) {
-    let currentJsonData = t(this.workflow, this.posId[Id]).safeObject;
-    let currnetPosPathArr = this.posId[Id].split(".");
-    let perPosPath = this.posId[Id].replace(
+    let currentJsonData = t(this.workflow,V.getPosId(Id)).safeObject;
+    let currnetPosPathArr = V.getPosId(Id).split(".");
+    let perPosPath =V.getPosId(Id).replace(
       currnetPosPathArr[currnetPosPathArr.length - 1],
       currentJsonData.Next
     );
