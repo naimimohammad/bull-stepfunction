@@ -26,6 +26,9 @@ const setIdResult = (Id:string,value:any) => {
     IdResult[Id]=value
 }
 
+const pushToResult =(Id:string,value:any)=>{
+    IdResult[Id].push(value)
+}
 ////////////////////////////////
 const getTypeId = (Id:string) => {
     return typeId[Id]
@@ -64,6 +67,7 @@ const V = {
     getIdinId,
     getPosId,
     getTypeId,
-    getAllEndID
+    getAllEndID,
+    pushToResult
 }
 export default V

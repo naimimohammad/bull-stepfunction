@@ -78,10 +78,9 @@ export class StepFunction {
         let ItemsPath = jsonData.ItemsPath;
         let MapData = jp.query(data, ItemsPath)[0];
         console.log("Map Data", MapData);
-        this.IdLength[workflowId] = MapData.length;
 
         V.setIdLength(workflowId,MapData.length)
-
+        V.setIdResult(workflowId,[])
         MapData.forEach((datain: any, index: number) => {
           let nposPath = `${posPath}.Iterator.States.${jsonData.Iterator.StartAt}`;
           let ntype = t(this.workflow, nposPath).safeObject.Type;
@@ -107,6 +106,7 @@ export class StepFunction {
         console.log("WWWWW", jsonData, posPath,workflowId,type);
 
         V.setIdLength(workflowId,jsonData.Branches.length)
+        V.setIdResult(workflowId,[])
 
         jsonData.Branches.forEach((States: any, index: number) => {
           let njsonData = States;
@@ -213,14 +213,15 @@ export class StepFunction {
           
 
             V.setIdResult(currentId,data)
-            V.setEndIdinId(currentId,upperId)
-
-            let ParallelResult = this.getObjKey(V.getAllEndID(), upperId);
+            V.pushToResult(upperId,data)
+            // V.setEndIdinId(currentId,upperId)
+            let ParallelResult=V.getIdResult(upperId)
+            // let ParallelResult = this.getObjKey(V.getAllEndID(), upperId);
             console.log("SSSS", ParallelResult);
             if (ParallelResult.length == V.getIdLength(upperId)) {
-              ParallelResult = ParallelResult.map(
-                (item: any) =>V.getIdResult(item)
-              );
+              // ParallelResult = ParallelResult.map(
+              //   (item: any) =>V.getIdResult(item)
+              // );
               V.setIdResult(upperId, ParallelResult)
               this.onCompleteState(
                V.getTypeId(upperId),
@@ -235,12 +236,14 @@ export class StepFunction {
          
             V.setIdResult(currentId,data)
             V.setEndIdinId(currentId,upperId)
+            V.pushToResult(upperId,data)
+            let MapResult=V.getIdResult(upperId)
 
-            let MapResult = this.getObjKey(V.getAllEndID(), upperId);
+            // let MapResult = this.getObjKey(V.getAllEndID(), upperId);
             console.log("FFFFFFF", currentId, upperId);
             if (MapResult.length == V.getIdLength(upperId)) {
               console.log("Map Done!")
-              MapResult = MapResult.map((item: any) => V.getIdResult(item));
+              // MapResult = MapResult.map((item: any) => V.getIdResult(item));
               V.setIdResult(upperId, MapResult)
 
               this.onCompleteState(

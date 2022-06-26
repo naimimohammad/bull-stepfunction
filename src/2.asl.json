@@ -1,0 +1,95 @@
+{
+    "StartAt": "P",
+    "States": {
+        "P":{
+            "Type": "Pass",
+            "Next":"V"
+        },
+        "V":{
+            "Type": "Pass",
+            "Next":"CC"
+        },
+        "CC":{
+            "Type": "Choice",
+            "Choices":[
+                {
+                    "Variable": "$.ds",
+                    "IsPresent": true,
+                    "Next": "BBF"
+                  }
+            ],
+            "Default":"PP"
+
+        },
+        "BBF":{
+            "Type": "Pass",
+            "End":true
+        },
+        "PP":{
+            "Next": "Z",
+            "Type": "Parallel",
+            "Branches": [
+                {
+                    "StartAt":"CC",
+                    "States":{
+                        "CC":{
+                            "Type":"Pass",
+                            "Next": "FF"
+                        },
+                        "FF":{
+                            "Type": "Pass",
+                            "End":true
+                        }
+                    }
+                },
+                {
+                    "StartAt":"PP2",
+                    "States":{
+                        "PP2":{
+                            "Type":"Parallel",
+                            "Next": "FF33",
+                            "Branches":[
+                                {"StartAt": "KK",
+                                    "States": {
+                                        "KK":{
+                                            "Type":"Pass",
+                                            "Next":"MM"
+                                        },
+                                        "MM":{
+                                            "Type": "Map",
+                                            "ItemsPath":"$.d",
+                                            "End": true,
+                                            "Iterator":{
+                                                "StartAt":"LL4",
+                                                "States":{
+                                                    "LL4":{
+                                                        "Type":"Pass",
+                                                        "End":true
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        "FF33":{
+                            "Type": "Pass",
+                            "End":true
+                        }
+                    }
+                }
+                
+            ]
+
+            
+        },
+        "Z":{
+            "Type": "Pass",
+            "End": true
+        }
+       
+       
+     
+    }
+}
