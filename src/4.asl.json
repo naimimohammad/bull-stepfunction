@@ -1,0 +1,37 @@
+{
+    "StartAt": "P",
+    "States": {
+        "P":{
+            "Type": "Pass",
+            "Next":"V"
+        },
+        "V":{
+            "Type": "Pass",
+            "Next":"CC"
+        },
+        "CC":{
+            "Type": "Choice",
+            "Choices":[
+                {
+                    "Variable": "$.ds",
+                    "IsPresent": true,
+                    "Next": "BBF"
+                  }
+            ],
+            "Default":"Z"
+
+        },
+        "BBF":{
+            "Type": "Pass",
+            "End":true
+        },
+       
+        "Z":{
+            "Type": "Pass",
+            "End": true
+        }
+       
+       
+     
+    }
+}

@@ -1,0 +1,26 @@
+{
+    "StartAt": "H",
+    "States": {
+        
+        "H":{
+            "Type": "Map",
+            "End":true,
+            "ItemsPath":"$.d",
+            "Iterator":{
+                "StartAt":"BBV",
+                "States":{
+                    "BBV":{
+                        "Type":"Pass",
+                        "Next":"BB"
+                    },
+                "BB":{
+                    "Type":"Pass",
+                    "End":true
+                }
+            }
+            }
+        }
+       
+     
+    }
+}
