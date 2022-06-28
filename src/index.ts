@@ -236,22 +236,24 @@ export class StepFunction {
               await Promise.all([
                 this.DB.Set("IdResult", currentId, data),
                 this.DB.Set("EndIdinId", currentId, upperId),
-                this.DB.pushResult(currentId, data),
+                this.DB.pushResult(upperId, data,index),
               ]);
 
               let ParallelResult = await this.DB.getResult(upperId);
-
               let ParallelResultLength = await this.DB.getDone(upperId);
-              console.log("SSSS", ParallelResultLength);
+              console.log("DDDDDDD",ParallelResult,ParallelResultLength,await this.DB.Get("IdLength", upperId))
               if (
                 ParallelResultLength == (await this.DB.Get("IdLength", upperId))
               ) {
+                console.log("SSSS", ParallelResultLength);
+
                 await this.DB.Set("IdResult", upperId, ParallelResult);
                 this.onCompleteState(
                   await this.DB.Get("TypeId", upperId),
                   await this.DB.Get("IdinId", upperId),
                   ParallelResult,
-                  upperId
+                  upperId,
+                  index
                 );
               }
               break;
@@ -260,17 +262,18 @@ export class StepFunction {
               await Promise.all([
                 this.DB.Set("IdResult", currentId, data),
                 this.DB.Set("EndIdinId", currentId, upperId),
-                this.DB.pushResult(upperId, data),
+                this.DB.pushResult(upperId, data,index),
               ]);
 
               let MapResult = await this.DB.getResult(upperId);
               let MapResultLength = await this.DB.getDone(upperId);
               console.log("FFFFFFF", currentId, upperId, MapResult,index);
               if (
-                MapResult.length == (await this.DB.Get("IdLength", upperId))
+                MapResultLength == (await this.DB.Get("IdLength", upperId))
               ) {
                 console.log("Map Done!", MapResult.length);
-                V.setIdResult(upperId, MapResult);
+                this.DB.Set('IdResult',upperId,MapResult)
+                // V.setIdResult(upperId, MapResult);
                 await this.DB.Set("IdResult", upperId, MapResult);
                 await this.onCompleteState(
                   await this.DB.Get("TypeId", upperId),

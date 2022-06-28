@@ -7,31 +7,30 @@
         },
         "V":{
             "Type": "Pass",
-            "Next":"CC"
-        },
-        "CC":{
-            "Type": "Choice",
-            "Choices":[
-                {
-                    "Variable": "$.ds",
-                    "IsPresent": true,
-                    "Next": "BBF"
-                  }
-            ],
-            "Default":"Z"
-
-        },
-        "BBF":{
-            "Type": "Pass",
-            "End":true
+            "Next":"PP2"
         },
        
-        "Z":{
-            "Type": "Pass",
-            "End": true
-        }
-       
-       
+        
+        "PP2":{
+            "Type":"Parallel",
+            "End": true,
+            "Branches":[
+                {"StartAt": "BBF",
+                    "States": {
+                    "BBF":{
+                        "Type": "Pass",
+                        "End":true
+                    }}},
+                   {"StartAt": "Z",
+                    "States": {"Z":{
+                        "Type": "Pass",
+                        "End": true
+                    }}
+                    
+                   
+             
+                    }]}
+            
      
     }
 }
