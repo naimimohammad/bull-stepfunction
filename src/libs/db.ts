@@ -21,7 +21,22 @@ export class DBCon {
                 value = `#number:${value.toString()}`
                 break;
             case 'object':
+                // if (Array.isArray(value)){
+                //     console.log("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+                //     value = `#array:${value.toString()}`
+                //     break
+                // }
+                // else {
                 value = `#object:${JSON.stringify(value)}`
+                break
+                // }
+            case 'undefined':
+                value = ""
+                break
+            case 'boolean':
+                value = `#boolean:${value.toString()}`
+                break
+            case 'string':
                 break
         }
        return  this.client.set(`${type}:${Id}`,value)
@@ -29,37 +44,47 @@ export class DBCon {
     }
     public async Get (type:string,Id:string) {
         let result:any = await this.client.get(`${type}:${Id}`)
-        // if (type == 'IdResult'){
-        //     try {
-        //         return JSON.parse(result)
-        //     } catch (error) {
-        //         return result
-        //     }
-        // }
-        // else 
         return this.checkObj(result)
     }
     public async pushResult (Id:string,value:any,index:number) {
         let fvalue = value
+        try{
         switch (typeof value) {
             case 'number':
                 value = `#number:${value.toString()}`
                 break;
             case 'object':
+                // if (Array.isArray(value)){
+                //     console.log("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+                //     value = `#array:${value.toString()}`
+                //     break
+                // }
+                // else {
                 value = `#object:${JSON.stringify(value)}`
                 break
+                // }
             case 'undefined':
                 value = ""
                 break
+            case 'boolean':
+                value = `#boolean:${value.toString()}`
+                break
+            case 'string':
+                break
+            
         }
-        console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",typeof value)
+        }
+        catch(e){
+            console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",typeof value,e)
+        }
+        
 
-        Promise.all([
+        await Promise.all([
             // this.client.lSet(`Result:${Id}`,index,(typeof value === 'object')?JSON.stringify(value):value),
             this.client.LSET(`Result:${Id}`,index,value),
             this.client.incr(`Done:${Id}`)]
         ).catch(e=>{
-            console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",value,fvalue,e )
+            console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",value,fvalue,e ,Id,index)
         })
         
     }
@@ -94,6 +119,9 @@ export class DBCon {
         if (value){
         if(value.includes('#number:')){return parseInt(value.split('#number:')[1])}
         else if (value.includes('#object:')){return JSON.parse(value.split('#object:')[1])}
+        else if (value==""){return undefined}
+        else if (value.includes('#array:')){return value.split('#array:')[1].split(',')}
+        else if (value.includes('#boolean:')){return (value == '#boolean:true')?true:false}
         else return value
         }
         else return value

@@ -15,21 +15,45 @@
             "Type":"Parallel",
             "End": true,
             "Branches":[
+                {"StartAt": "Z",
+                    "States": {"Z":{
+                        "Type": "Pass",
+                        "End": true
+                    }}
+
+                    
+                   
+             
+                    },
                 {"StartAt": "BBF",
                     "States": {
                     "BBF":{
                         "Type": "Pass",
                         "End":true
                     }}},
-                   {"StartAt": "Z",
-                    "States": {"Z":{
-                        "Type": "Pass",
-                        "End": true
-                    }}
+                  
+                    {
+                        "StartAt": "FGF",
+                        "States": {
+                            "FGF":{
+                                "Type": "Map",
+                                "ItemsPath":"$.d",
+                                "End": true,
+                                "Iterator":{
+                                    "StartAt": "VVV",
+                                    "States": {
+                                        "VVV":{
+                                            "Type":"Wait",
+                                            "Seconds":0,
+                                            "End":true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                     
-                   
-             
-                    }]}
+                    ]}
             
      
     }
