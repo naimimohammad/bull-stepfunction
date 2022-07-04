@@ -3,14 +3,18 @@ export class DBCon {
     /*
     */
     client;
+    publisher:any;
+    subscriber:any
     constructor(redisUri:string){
         this.client = redis.createClient({url: redisUri})
         
+            this.publisher = redis.createClient({url: redisUri})
+            this.subscriber =redis.createClient({url: redisUri})
             this.connect()
-    }
+        }
     
     async connect() {
-         await this.client.connect()
+         await Promise.all([this.client.connect(),this.publisher.connect(),this.subscriber.connect()])
     }
 
 
@@ -39,7 +43,7 @@ export class DBCon {
             case 'string':
                 break
         }
-       return  this.client.set(`${type}:${Id}`,value)
+       return  await this.client.set(`${type}:${Id}`,value)
 
     }
     public async Get (type:string,Id:string) {
@@ -48,7 +52,7 @@ export class DBCon {
     }
     public async pushResult (Id:string,value:any,index:number) {
         let fvalue = value
-        try{
+        
         switch (typeof value) {
             case 'number':
                 value = `#number:${value.toString()}`
@@ -73,12 +77,9 @@ export class DBCon {
                 break
             
         }
-        }
-        catch(e){
-            console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",typeof value,e)
-        }
         
-
+       
+     
         await Promise.all([
             // this.client.lSet(`Result:${Id}`,index,(typeof value === 'object')?JSON.stringify(value):value),
             this.client.LSET(`Result:${Id}`,index,value),
@@ -86,6 +87,7 @@ export class DBCon {
         ).catch(e=>{
             console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",value,fvalue,e ,Id,index)
         })
+       
         
     }
 
@@ -100,7 +102,7 @@ export class DBCon {
             
         }
         // this.client.set(`Result:${Id}`,0)
-        this.client.lPush(`Result:${Id}`,arr)
+        await this.client.lPush(`Result:${Id}`,arr)
     }
 
     public async getResult (Id:string) {

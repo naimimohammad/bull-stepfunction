@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/bull": "^3.15.8",
     "@types/jsonpath": "^0.2.0",
     "@types/lodash": "^4.14.182",
     "@types/node": "^17.0.40",
@@ -19,6 +20,7 @@
     "jsonpath": "^1.1.1"
   },
   "dependencies": {
+    "bull": "^4.8.4",
     "redis": "^4.1.0",
     "typy": "^3.3.0"
   }

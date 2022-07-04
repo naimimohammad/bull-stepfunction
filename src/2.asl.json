@@ -7,32 +7,17 @@
         },
         "V":{
             "Type": "Pass",
-            "Next":"CC"
+            "Next":"PP"
         },
-        "CC":{
-            "Type": "Choice",
-            "Choices":[
-                {
-                    "Variable": "$.ds",
-                    "IsPresent": true,
-                    "Next": "BBF"
-                  }
-            ],
-            "Default":"PP"
-
-        },
-        "BBF":{
-            "Type": "Pass",
-            "End":true
-        },
+        
         "PP":{
             "Next": "Z",
             "Type": "Parallel",
             "Branches": [
                 {
-                    "StartAt":"CC",
+                    "StartAt":"CC1",
                     "States":{
-                        "CC":{
+                        "CC1":{
                             "Type":"Pass",
                             "Next": "FF"
                         },

@@ -7,54 +7,73 @@
         },
         "V":{
             "Type": "Pass",
-            "Next":"PP2"
+            "Next":"PP3"
         },
-       
-        
-        "PP2":{
-            "Type":"Parallel",
-            "End": true,
-            "Branches":[
-                {"StartAt": "Z",
-                    "States": {"Z":{
-                        "Type": "Pass",
-                        "End": true
-                    }}
-
-                    
-                   
-             
-                    },
-                {"StartAt": "BBF",
-                    "States": {
-                    "BBF":{
-                        "Type": "Pass",
-                        "End":true
-                    }}},
-                  
-                    {
-                        "StartAt": "FGF",
-                        "States": {
-                            "FGF":{
-                                "Type": "Map",
-                                "ItemsPath":"$.d",
+       "PP3":{
+        "Type": "Map",
+        "Next":"XZ",
+        "ItemsPath": "$.d",
+        "Iterator":{
+            "StartAt": "PP2",
+            "States": {
+                "PP2":{
+                    "Type":"Parallel",
+                    "End": true,
+                    "Branches":[
+                        {"StartAt": "Z",
+                            "States": {"Z":{
+                                "Type": "Parallel",
                                 "End": true,
-                                "Iterator":{
-                                    "StartAt": "VVV",
-                                    "States": {
-                                        "VVV":{
-                                            "Type":"Wait",
-                                            "Seconds":0,
-                                            "End":true
+                                "Branches": [
+                                    {
+                                        "StartAt":"F",
+                                        "States":{
+                                            "F":{
+                                                "Type":"Pass",
+                                                "End":true
+                                            }
                                         }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                                    },
+                                    {"StartAt": "BBF",
+                                        "States": {
+                                        "BBF":{
+                                            "Type": "Pass",
+                                            "Next":"HH"
+                                        },
+                                        
+                                            "HH":{
+                                                "Type":"Pass",
+                                                "End":true
+                                            }
+                                        }
+                                        }
+                                    
+                                ]
+                            }}
+        
+                            
+                           
+                     
+                            },
+                        {"StartAt": "BBF",
+                            "States": {
+                            "BBF":{
+                                "Type": "Pass",
+                                "End":true
+                            }}}
+                            
+                            ]}
                     
-                    ]}
-            
-     
+             
+            }
+
+        }
+       },
+       "XZ":{
+        "Type": "Pass",
+        "End":true
+       }
+        
+       
     }
 }
