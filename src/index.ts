@@ -8,8 +8,10 @@ import { Choice } from "aws-sf-choice";
 import V from "./libs/newdb";
 import { DBCon } from "./libs/db";
 import Queue from "bull";
+import { EventEmitter } from 'events'
 
-export class StepFunction {
+
+export class StepFunction extends EventEmitter {
   workflow: any;
   workflowId!: string;
   resources: any;
@@ -23,7 +25,8 @@ export class StepFunction {
   DB: any = {};
   onCompleteQueue :any
   startQueue:any;
-  constructor(jsonPath: string, resources: any) {
+    constructor(jsonPath: string, resources: any) {
+      super()
     this.DB = new DBCon("redis://127.0.0.1:6381");
     this.jsonPath = jsonPath;
     this.resources = resources;
@@ -31,11 +34,13 @@ export class StepFunction {
     this.startQueue = new Queue('startQueue',"redis://127.0.0.1:6381")
     this.startQueue.process(100,(job:any,done:any)=>{
       let data = {...job.data}
+      console.log(`${data[2]} at position ${data[4]} started`)
       this.start(data[0],data[1],data[2],data[3],data[4],data[5])
       done()
     })
     this.onCompleteQueue.process(1,async (job:any,done:any)=>{
       let data = {...job.data}
+      console.log(`${data[0]} at position ${await this.DB.Get('PosId',data[3])} finished`)
       await this.onCompleteState(data[0],data[1],data[2],data[3],data[4])
       done()
     })
@@ -46,6 +51,7 @@ export class StepFunction {
     );
   }
 
+  
   private getObjKey(obj: any, value: any) {
     let t: any[] = [];
     Object.keys(obj).forEach((item) => {
@@ -91,10 +97,8 @@ export class StepFunction {
     switch (type) {
       case "Map": {
         let workflowId: string = uuidv4();
-        console.log("$$$$4",index)
         let ItemsPath = jsonData.ItemsPath;
         let MapData = jp.query(data, ItemsPath)[0];
-        console.log("Map Data", MapData);
 
         await Promise.all([
           this.DB.Set("TypeId", workflowId, type),
@@ -107,16 +111,7 @@ export class StepFunction {
 
         for (let [index, datain] of MapData.entries()) {
           let nposPath = `${posPath}.Iterator.States.${jsonData.Iterator.StartAt}`;
-          let ntype = t(this.workflow, nposPath).safeObject.Type;
-          console.log(nposPath, ntype, "%%%%%%%",index,datain);
-          //   this.start(
-          //   datain,
-          //   t(this.workflow, nposPath).safeObject,
-          //   ntype,
-          //   workflowId,
-          //   nposPath,
-          //   index
-          // );
+          let ntype = t(this.workflow, nposPath).safeObject.Type;         
           this.startQueue.add([
             datain,
             t(this.workflow, nposPath).safeObject,
@@ -140,22 +135,12 @@ export class StepFunction {
           this.DB.CreateInitResult(workflowId, jsonData.Branches.length),
         ]);
 
-        console.log("WWWWW", jsonData, posPath, workflowId, type);
 
         for (let [index, States] of jsonData.Branches.entries()) {
-          console.log("!@!@!@!@!!@@:",index,States)
           let njsonData = States;
           let nposPath = `${posPath}.Branches[${index}].States.${njsonData.StartAt}`;
           let ntype = t(this.workflow, nposPath).safeObject.Type;
-          console.log("!!!", nposPath, t(this.workflow, nposPath).safeObject);
-          //  this.start(
-          //   data,
-          //   t(this.workflow, nposPath).safeObject,
-          //   ntype,
-          //   workflowId,
-          //   nposPath,
-          //   index
-          // );
+         
           this.startQueue.add([
                data,
             t(this.workflow, nposPath).safeObject,
@@ -194,12 +179,10 @@ export class StepFunction {
 
         await this.sleep(jsonData.Seconds);
         this.onCompleteQueue.add([type, upperId, data, workflowId,index],{removeOnComplete:true})
-        // await this.onCompleteState(type, upperId, data, workflowId,index);
         break;
       }
       case "Pass": {
         let workflowId: string = uuidv4();
-        console.log("SSSSSSSSSSSSSSDDDDDDDD",index)
         await Promise.all([
           this.DB.Set("TypeId", workflowId, type),
           this.DB.Set("IdinId", workflowId, upperId),
@@ -211,7 +194,6 @@ export class StepFunction {
        
         this.onCompleteQueue.add([type, upperId, data, workflowId,index],{removeOnComplete:true})
 
-        // await this.onCompleteState(type, upperId, data, workflowId,index);
         break;
       }
       case "Choice": {
@@ -222,14 +204,7 @@ export class StepFunction {
           currentPosPathArr[currentPosPathArr.length - 1],
           next
         );
-        // this.start(
-        //   data,
-        //   t(this.workflow, nextpospath).safeObject,
-        //   t(this.workflow, nextpospath).safeObject.Type,
-        //   upperId,
-        //   nextpospath,
-        //   index
-        // );
+       
         this.startQueue.add([
             data,
           t(this.workflow, nextpospath).safeObject,
@@ -241,7 +216,6 @@ export class StepFunction {
         break;
       }
     }
-    // return Promise.resolve()
   
   }
 
@@ -271,9 +245,9 @@ export class StepFunction {
       if ((await this.DB.Get("TypeId", currentId)) == "root") {
         await this.DB.Set('IdResult',currentId,data)
         console.log("workflow finished",await this.DB.Get('IdResult',currentId));
+        this.emit('complete',{workflowId:currentId,data:data})
       } else {
         if (await this.endDetection(currentId)) {
-          // switch (V.getTypeId(upperId)) {
           switch (await this.DB.Get("TypeId", upperId)) {
             case "Parallel": {
               await Promise.all([
@@ -281,14 +255,11 @@ export class StepFunction {
                 this.DB.Set("EndIdinId", currentId, upperId),
                 this.DB.pushResult(upperId, data,await this.DB.Get('IndexId',currentId)),
               ]);
-              console.log(data)
               let ParallelResult = await this.DB.getResult(upperId);
               let ParallelResultLength = await this.DB.getDone(upperId);
-              console.log("DDDDDDD",index,ParallelResult,ParallelResultLength,await this.DB.Get("IdLength", upperId))
               if (
                 ParallelResultLength == (await this.DB.Get("IdLength", upperId))
               ) {
-                console.log("SSSS", ParallelResultLength);
 
                 await this.DB.Set("IdResult", upperId, ParallelResult);
                 this.onCompleteQueue.add([
@@ -298,13 +269,7 @@ export class StepFunction {
                      upperId,
                      await this.DB.Get('IndexId',upperId)],{removeOnComplete:true})
 
-                // this.onCompleteState(
-                //   await this.DB.Get("TypeId", upperId),
-                //   await this.DB.Get("IdinId", upperId),
-                //   ParallelResult,
-                //   upperId,
-                //   index
-                // );
+               
               }
               break;
             }
@@ -317,13 +282,10 @@ export class StepFunction {
 
               let MapResult = await this.DB.getResult(upperId);
               let MapResultLength = await this.DB.getDone(upperId);
-              console.log("FFFFFFF", currentId, upperId, MapResult,index);
               if (
                 MapResultLength == (await this.DB.Get("IdLength", upperId))
               ) {
-                console.log("Map Done!", MapResult.length,MapResult);
                 this.DB.Set('IdResult',upperId,MapResult)
-                // V.setIdResult(upperId, MapResult);
                 await this.DB.Set("IdResult", upperId, MapResult);
                 this.onCompleteQueue.add([
                   await this.DB.Get("TypeId", upperId),
@@ -331,18 +293,11 @@ export class StepFunction {
                      MapResult,
                      upperId,
                      await this.DB.Get('IndexId',upperId)],{removeOnComplete:true})
-                // await this.onCompleteState(
-                //   await this.DB.Get("TypeId", upperId),
-                //   await this.DB.Get("IdinId", upperId),
-                //   MapResult,
-                //   upperId,
-                //   index
-                // );
+               
               }
               break;
             }
             default: {
-              console.log("DDSDSDSDSDSDDWDSDSDSDSSDSSDSDSDSSSDDSS",index,data)
 
               await this.DB.Set("IdResult", currentId, data);
               this.onCompleteQueue.add([
@@ -351,27 +306,14 @@ export class StepFunction {
                    data,
                    upperId,
                    index],{removeOnComplete:true})
-              // await this.onCompleteState(
-              //   await this.DB.Get("TypeId", upperId),
-              //   await this.DB.Get("IdinId", upperId),
-              //   data,
-              //   upperId,
-              //   index
-              // );
+              
               break;
             }
           }
         } else {
           let nextObj = await this.nextDetection(currentId);
           await this.DB.Set('IdResult',currentId,data)
-          //  this.start(
-          //   data,
-          //   nextObj[0],
-          //   nextObj[0].Type,
-          //   upperId,
-          //   nextObj[1],
-          //   index
-          // );
+        
           this.startQueue.add([
            
               data,
