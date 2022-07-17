@@ -1,14 +1,17 @@
 {
   "name": "bull-stepfunction",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "run bullQ job like AWS stepfunction",
+  "main": "lib/index.js",
+  "types":"lib/index.d.ts",
+  "files": ["/lib"],
   "scripts": {
     "start": "tsc && node lib/main.js",
+    "build": "npx tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["aws","stepfunction","workflow","bull","job","bullQ"],
+  "author": "Mohammad Naimi",
   "license": "ISC",
   "devDependencies": {
     "@types/bull": "^3.15.8",
@@ -23,5 +26,9 @@
     "bull": "^4.8.4",
     "redis": "^4.1.0",
     "typy": "^3.3.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/naimimohammad/bull-stepfunction.git"
   }
 }

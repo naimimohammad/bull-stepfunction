@@ -52,13 +52,7 @@ export class StepFunction extends EventEmitter {
   }
 
   
-  private getObjKey(obj: any, value: any) {
-    let t: any[] = [];
-    Object.keys(obj).forEach((item) => {
-      if (obj[item] == value) t.push(item);
-    });
-    return t;
-  }
+  
   async init(data: any) {
     let workflowId = uuidv4();
     await this.DB.Set('workflow',workflowId,this.jsonPath)
