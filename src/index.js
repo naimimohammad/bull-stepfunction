@@ -37,7 +37,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StepFunction = void 0;
 const fs = __importStar(require("fs"));
-const path = __importStar(require("path"));
 const uuid_1 = require("uuid");
 const typy_1 = __importDefault(require("typy"));
 const lodash_1 = __importDefault(require("lodash"));
@@ -47,7 +46,7 @@ const db_1 = require("./libs/db");
 const bull_1 = __importDefault(require("bull"));
 const events_1 = require("events");
 class StepFunction extends events_1.EventEmitter {
-    constructor(jsonPath, resources) {
+    constructor(jsonPath, resources, redis) {
         super();
         this.typeId = {};
         this.posId = {};
@@ -56,11 +55,11 @@ class StepFunction extends events_1.EventEmitter {
         this.IdLength = {};
         this.IdResult = {};
         this.DB = {};
-        this.DB = new db_1.DBCon("redis://127.0.0.1:6381");
+        this.DB = new db_1.DBCon(redis);
         this.jsonPath = jsonPath;
         this.resources = resources;
-        this.onCompleteQueue = new bull_1.default('onCompleteState', "redis://127.0.0.1:6381");
-        this.startQueue = new bull_1.default('startQueue', "redis://127.0.0.1:6381");
+        this.onCompleteQueue = new bull_1.default('onCompleteState', redis);
+        this.startQueue = new bull_1.default('startQueue', redis);
         this.startQueue.process(100, (job, done) => {
             let data = Object.assign({}, job.data);
             console.log(`${data[2]} at position ${data[4]} started`);
@@ -73,7 +72,9 @@ class StepFunction extends events_1.EventEmitter {
             yield this.onCompleteState(data[0], data[1], data[2], data[3], data[4]);
             done();
         }));
-        this.workflow = JSON.parse(fs.readFileSync(path.join(__dirname, jsonPath), {
+        this.workflow = JSON.parse(
+        // fs.readFileSync(path.join(__dirname, jsonPath), {
+        fs.readFileSync(jsonPath, {
             encoding: "utf-8",
         }));
     }

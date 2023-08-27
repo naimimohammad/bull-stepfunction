@@ -16,6 +16,7 @@ export class StepFunction extends EventEmitter {
   workflowId!: string;
   resources: any;
   jsonPath!: string;
+  redis!: String;
   typeId: any = {};
   posId: any = {};
   IdinId: any = {};
@@ -25,13 +26,13 @@ export class StepFunction extends EventEmitter {
   DB: any = {};
   onCompleteQueue :any
   startQueue:any;
-    constructor(jsonPath: string, resources: any) {
+    constructor(jsonPath: string, resources: any, redis:any ) {
       super()
-    this.DB = new DBCon("redis://127.0.0.1:6381");
+    this.DB = new DBCon(redis);
     this.jsonPath = jsonPath;
     this.resources = resources;
-    this.onCompleteQueue = new Queue('onCompleteState',"redis://127.0.0.1:6381")
-    this.startQueue = new Queue('startQueue',"redis://127.0.0.1:6381")
+    this.onCompleteQueue = new Queue('onCompleteState',redis)
+    this.startQueue = new Queue('startQueue',redis)
     this.startQueue.process(100,(job:any,done:any)=>{
       let data = {...job.data}
       console.log(`${data[2]} at position ${data[4]} started`)
@@ -45,7 +46,8 @@ export class StepFunction extends EventEmitter {
       done()
     })
     this.workflow = JSON.parse(
-      fs.readFileSync(path.join(__dirname, jsonPath), {
+      // fs.readFileSync(path.join(__dirname, jsonPath), {
+      fs.readFileSync(jsonPath, {
         encoding: "utf-8",
       })
     );
