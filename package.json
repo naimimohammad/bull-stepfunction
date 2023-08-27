@@ -25,7 +25,8 @@
   "dependencies": {
     "bull": "^4.8.4",
     "redis": "^4.1.0",
-    "typy": "^3.3.0"
+    "typy": "^3.3.0",
+    "aws-sf-choice": "^1.0.21"
   },
   "repository": {
     "type": "git",
