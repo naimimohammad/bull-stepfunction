@@ -25,15 +25,8 @@ export class DBCon {
                 value = `#number:${value.toString()}`
                 break;
             case 'object':
-                // if (Array.isArray(value)){
-                //     console.log("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-                //     value = `#array:${value.toString()}`
-                //     break
-                // }
-                // else {
                 value = `#object:${JSON.stringify(value)}`
                 break
-                // }
             case 'undefined':
                 value = ""
                 break
@@ -58,15 +51,8 @@ export class DBCon {
                 value = `#number:${value.toString()}`
                 break;
             case 'object':
-                // if (Array.isArray(value)){
-                //     console.log("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-                //     value = `#array:${value.toString()}`
-                //     break
-                // }
-                // else {
                 value = `#object:${JSON.stringify(value)}`
                 break
-                // }
             case 'undefined':
                 value = ""
                 break
@@ -81,11 +67,10 @@ export class DBCon {
        
      
         await Promise.all([
-            // this.client.lSet(`Result:${Id}`,index,(typeof value === 'object')?JSON.stringify(value):value),
             this.client.LSET(`Result:${Id}`,index,value),
             this.client.incr(`Done:${Id}`)]
         ).catch(e=>{
-            console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",value,fvalue,e ,Id,index)
+            console.log("error:",value,fvalue,e ,Id,index)
         })
        
         
@@ -101,7 +86,6 @@ export class DBCon {
             arr.push("")
             
         }
-        // this.client.set(`Result:${Id}`,0)
         await this.client.lPush(`Result:${Id}`,arr)
     }
 

@@ -1,11 +1,9 @@
 import * as fs from "fs";
-import * as path from "path";
 import { v4 as uuidv4 } from "uuid";
 import t from "typy";
 import _ from "lodash";
 import jp from "jsonpath";
 import { Choice } from "aws-sf-choice";
-import V from "./libs/newdb";
 import { DBCon } from "./libs/db";
 import Queue from "bull";
 import { EventEmitter } from 'events'
@@ -16,7 +14,7 @@ export class StepFunction extends EventEmitter {
   workflowId!: string;
   resources: any;
   jsonPath!: string;
-  redis!: String;
+  opts: any = {};
   typeId: any = {};
   posId: any = {};
   IdinId: any = {};
@@ -26,22 +24,23 @@ export class StepFunction extends EventEmitter {
   DB: any = {};
   onCompleteQueue :any
   startQueue:any;
-    constructor(jsonPath: string, resources: any, redis:any ) {
+    constructor(jsonPath: string, resources: any, opts = {redis:"redis://127.0.0.1:6381",loging:true} ) {
       super()
-    this.DB = new DBCon(redis);
+   
+    this.DB = new DBCon(opts?.redis);
     this.jsonPath = jsonPath;
     this.resources = resources;
-    this.onCompleteQueue = new Queue('onCompleteState',redis)
-    this.startQueue = new Queue('startQueue',redis)
+    this.onCompleteQueue = new Queue('onCompleteState',opts?.redis)
+    this.startQueue = new Queue('startQueue',opts?.redis)
     this.startQueue.process(100,(job:any,done:any)=>{
       let data = {...job.data}
-      console.log(`${data[2]} at position ${data[4]} started`)
+      if (opts?.loging) console.log(`${data[2]} at position ${data[4]} started`)
       this.start(data[0],data[1],data[2],data[3],data[4],data[5])
       done()
     })
     this.onCompleteQueue.process(1,async (job:any,done:any)=>{
       let data = {...job.data}
-      console.log(`${data[0]} at position ${await this.DB.Get('PosId',data[3])} finished`)
+      if (opts?.loging) console.log(`${data[0]} at position ${await this.DB.Get('PosId',data[3])} finished`)
       await this.onCompleteState(data[0],data[1],data[2],data[3],data[4])
       done()
     })
@@ -158,8 +157,10 @@ export class StepFunction extends EventEmitter {
           this.DB.Set('IndexId',workflowId,index),
 
         ]);
+        console.log(type,upperId,posPath,index,"!!!!!!!!!!!!!!!!!!!!#################")
 
-        this.resources[jsonData.resources].add(data, { jobId: workflowId });
+        // this.resources[jsonData.resources].add(data, { jobId: workflowId });
+        this.resources[t(this.workflow,posPath).safeObject.Resource].add(data, { jobId: workflowId });
         break;
       }
       case "Wait": {
@@ -216,6 +217,7 @@ export class StepFunction extends EventEmitter {
   }
 
   async jobComplete(job: any) {
+    console.log("job has been completed ",job.opts)
     this.onCompleteState(
       "Task",
       await this.DB.Get("IdinId", job.opts.jobId),
