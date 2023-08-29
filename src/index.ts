@@ -6,8 +6,7 @@ import jp from "jsonpath";
 import { Choice } from "aws-sf-choice";
 import { DBCon } from "./libs/db";
 import Queue from "bull";
-import { EventEmitter } from 'events'
-
+import { EventEmitter } from "events";
 
 export class StepFunction extends EventEmitter {
   workflow: any;
@@ -22,28 +21,43 @@ export class StepFunction extends EventEmitter {
   IdLength: any = {};
   IdResult: any = {};
   DB: any = {};
-  onCompleteQueue :any
-  startQueue:any;
-    constructor(jsonPath: string, resources: any, opts = {redis:"redis://127.0.0.1:6381",loging:true} ) {
-      super()
-   
+  onCompleteQueue: any;
+  startQueue: any;
+  constructor(
+    jsonPath: string,
+    resources: any,
+    opts = { redis: "redis://127.0.0.1:6381", loging: true }
+  ) {
+    super();
+    Object.keys(resources).forEach(jobQ=>{
+      resources[jobQ].on('completed',(job:any)=>{
+        this.jobComplete(job)
+      })  
+    })
     this.DB = new DBCon(opts?.redis);
     this.jsonPath = jsonPath;
     this.resources = resources;
-    this.onCompleteQueue = new Queue('onCompleteState',opts?.redis)
-    this.startQueue = new Queue('startQueue',opts?.redis)
-    this.startQueue.process(100,(job:any,done:any)=>{
-      let data = {...job.data}
-      if (opts?.loging) console.log(`${data[2]} at position ${data[4]} started`)
-      this.start(data[0],data[1],data[2],data[3],data[4],data[5])
-      done()
-    })
-    this.onCompleteQueue.process(1,async (job:any,done:any)=>{
-      let data = {...job.data}
-      if (opts?.loging) console.log(`${data[0]} at position ${await this.DB.Get('PosId',data[3])} finished`)
-      await this.onCompleteState(data[0],data[1],data[2],data[3],data[4])
-      done()
-    })
+    this.onCompleteQueue = new Queue("onCompleteState", opts?.redis);
+    this.startQueue = new Queue("startQueue", opts?.redis);
+    this.startQueue.process(100, (job: any, done: any) => {
+      let data = { ...job.data };
+      if (opts?.loging)
+        console.log(`${data[2]} at position ${data[4]} started`);
+      this.start(data[0], data[1], data[2], data[3], data[4], data[5]);
+      done();
+    });
+    this.onCompleteQueue.process(1, async (job: any, done: any) => {
+      let data = { ...job.data };
+      if (opts?.loging)
+        // console.log(
+        //   `${data[0]} at position ${await this.DB.Get(
+        //     "PosId",
+        //     data[3]
+        //   )} finished`
+        // );
+      await this.onCompleteState(data[0], data[1], data[2], data[3], data[4]);
+      done();
+    });
     this.workflow = JSON.parse(
       // fs.readFileSync(path.join(__dirname, jsonPath), {
       fs.readFileSync(jsonPath, {
@@ -52,32 +66,28 @@ export class StepFunction extends EventEmitter {
     );
   }
 
-  
-  
   async init(data: any) {
     let workflowId = uuidv4();
-    await this.DB.Set('workflow',workflowId,this.jsonPath)
+    await this.DB.Set("workflow", workflowId, this.jsonPath);
 
     await Promise.all([
       this.DB.Set("TypeId", workflowId, "root"),
       this.DB.Set("PosId", workflowId, "States"),
     ]);
 
-  
     let type = this.workflow.States[this.workflow.StartAt].Type;
     let jsonData = t(
       this.workflow,
       `States.${this.workflow.StartAt}`
     ).safeObject;
-   
-    
+
     this.startQueue.add([
       data,
       jsonData,
       type,
       workflowId,
-      `States.${this.workflow.StartAt}`
-    ])
+      `States.${this.workflow.StartAt}`,
+    ]);
   }
   async start(
     data: any,
@@ -85,10 +95,8 @@ export class StepFunction extends EventEmitter {
     type: string,
     upperId: string,
     posPath: string,
-    index?:number
+    index?: number
   ) {
-
-    
     switch (type) {
       case "Map": {
         let workflowId: string = uuidv4();
@@ -100,21 +108,21 @@ export class StepFunction extends EventEmitter {
           this.DB.Set("IdinId", workflowId, upperId),
           this.DB.Set("PosId", workflowId, posPath),
           this.DB.Set("IdLength", workflowId, MapData.length),
-          this.DB.Set('IndexId',workflowId,index),
+          this.DB.Set("IndexId", workflowId, index),
           this.DB.CreateInitResult(workflowId, MapData.length),
         ]);
 
         for (let [index, datain] of MapData.entries()) {
           let nposPath = `${posPath}.Iterator.States.${jsonData.Iterator.StartAt}`;
-          let ntype = t(this.workflow, nposPath).safeObject.Type;         
+          let ntype = t(this.workflow, nposPath).safeObject.Type;
           this.startQueue.add([
             datain,
             t(this.workflow, nposPath).safeObject,
             ntype,
             workflowId,
             nposPath,
-            index
-          ])
+            index,
+          ]);
         }
         break;
       }
@@ -126,24 +134,23 @@ export class StepFunction extends EventEmitter {
           this.DB.Set("IdinId", workflowId, upperId),
           this.DB.Set("PosId", workflowId, posPath),
           this.DB.Set("IdLength", workflowId, jsonData.Branches.length),
-          this.DB.Set('IndexId',workflowId,index),
+          this.DB.Set("IndexId", workflowId, index),
           this.DB.CreateInitResult(workflowId, jsonData.Branches.length),
         ]);
-
 
         for (let [index, States] of jsonData.Branches.entries()) {
           let njsonData = States;
           let nposPath = `${posPath}.Branches[${index}].States.${njsonData.StartAt}`;
           let ntype = t(this.workflow, nposPath).safeObject.Type;
-         
+
           this.startQueue.add([
-               data,
+            data,
             t(this.workflow, nposPath).safeObject,
             ntype,
             workflowId,
             nposPath,
-            index
-          ])
+            index,
+          ]);
         }
         break;
       }
@@ -154,13 +161,28 @@ export class StepFunction extends EventEmitter {
           this.DB.Set("TypeId", workflowId, type),
           this.DB.Set("IdinId", workflowId, upperId),
           this.DB.Set("PosId", workflowId, posPath),
-          this.DB.Set('IndexId',workflowId,index),
-
+          this.DB.Set("IndexId", workflowId, index),
         ]);
-        console.log(type,upperId,posPath,index,"!!!!!!!!!!!!!!!!!!!!#################")
-
+        console.log(
+          type,
+          data,
+          upperId,
+          posPath,
+          index,
+          t(this.workflow, posPath).safeObject.Resource,
+          "!!!!!!!!!!!!!!!!!!!!#################"
+        );
+        
         // this.resources[jsonData.resources].add(data, { jobId: workflowId });
-        this.resources[t(this.workflow,posPath).safeObject.Resource].add(data, { jobId: workflowId });
+        try {
+          this.resources[t(this.workflow, posPath).safeObject.Resource].add(
+            data,
+            { jobId: workflowId }
+          );
+      
+        } catch (e) {
+          console.log("add to job error :", e);
+        }
         break;
       }
       case "Wait": {
@@ -170,12 +192,13 @@ export class StepFunction extends EventEmitter {
           this.DB.Set("TypeId", workflowId, type),
           this.DB.Set("IdinId", workflowId, upperId),
           this.DB.Set("PosId", workflowId, posPath),
-          this.DB.Set('IndexId',workflowId,index),
-
+          this.DB.Set("IndexId", workflowId, index),
         ]);
 
         await this.sleep(jsonData.Seconds);
-        this.onCompleteQueue.add([type, upperId, data, workflowId,index],{removeOnComplete:true})
+        this.onCompleteQueue.add([type, upperId, data, workflowId, index], {
+          removeOnComplete: true,
+        });
         break;
       }
       case "Pass": {
@@ -184,12 +207,12 @@ export class StepFunction extends EventEmitter {
           this.DB.Set("TypeId", workflowId, type),
           this.DB.Set("IdinId", workflowId, upperId),
           this.DB.Set("PosId", workflowId, posPath),
-          this.DB.Set('IndexId',workflowId,index),
-
+          this.DB.Set("IndexId", workflowId, index),
         ]);
 
-       
-        this.onCompleteQueue.add([type, upperId, data, workflowId,index],{removeOnComplete:true})
+        this.onCompleteQueue.add([type, upperId, data, workflowId, index], {
+          removeOnComplete: true,
+        });
 
         break;
       }
@@ -201,23 +224,22 @@ export class StepFunction extends EventEmitter {
           currentPosPathArr[currentPosPathArr.length - 1],
           next
         );
-       
+
         this.startQueue.add([
-            data,
+          data,
           t(this.workflow, nextpospath).safeObject,
           t(this.workflow, nextpospath).safeObject.Type,
           upperId,
           nextpospath,
-          index
-        ])
+          index,
+        ]);
         break;
       }
     }
-  
   }
 
   async jobComplete(job: any) {
-    console.log("job has been completed ",job.opts)
+    console.log("job has been completed ", job.opts);
     this.onCompleteState(
       "Task",
       await this.DB.Get("IdinId", job.opts.jobId),
@@ -237,13 +259,16 @@ export class StepFunction extends EventEmitter {
     upperId: string,
     data: any,
     currentId: string,
-    index?:number
+    index?: number
   ) {
     try {
       if ((await this.DB.Get("TypeId", currentId)) == "root") {
-        await this.DB.Set('IdResult',currentId,data)
-        console.log("workflow finished",await this.DB.Get('IdResult',currentId));
-        this.emit('complete',{workflowId:currentId,data:data})
+        await this.DB.Set("IdResult", currentId, data);
+        console.log(
+          "workflow finished",
+          await this.DB.Get("IdResult", currentId)
+        );
+        this.emit("complete", { workflowId: currentId, data: data });
       } else {
         if (await this.endDetection(currentId)) {
           switch (await this.DB.Get("TypeId", upperId)) {
@@ -251,23 +276,28 @@ export class StepFunction extends EventEmitter {
               await Promise.all([
                 this.DB.Set("IdResult", currentId, data),
                 this.DB.Set("EndIdinId", currentId, upperId),
-                this.DB.pushResult(upperId, data,await this.DB.Get('IndexId',currentId)),
+                this.DB.pushResult(
+                  upperId,
+                  data,
+                  await this.DB.Get("IndexId", currentId)
+                ),
               ]);
               let ParallelResult = await this.DB.getResult(upperId);
               let ParallelResultLength = await this.DB.getDone(upperId);
               if (
                 ParallelResultLength == (await this.DB.Get("IdLength", upperId))
               ) {
-
                 await this.DB.Set("IdResult", upperId, ParallelResult);
-                this.onCompleteQueue.add([
-                  await this.DB.Get("TypeId", upperId),
-                   await this.DB.Get("IdinId", upperId),
-                     ParallelResult,
-                     upperId,
-                     await this.DB.Get('IndexId',upperId)],{removeOnComplete:true})
-
-               
+                this.onCompleteQueue.add(
+                  [
+                    await this.DB.Get("TypeId", upperId),
+                    await this.DB.Get("IdinId", upperId),
+                    ParallelResult,
+                    upperId,
+                    await this.DB.Get("IndexId", upperId),
+                  ],
+                  { removeOnComplete: true }
+                );
               }
               break;
             }
@@ -275,53 +305,61 @@ export class StepFunction extends EventEmitter {
               await Promise.all([
                 this.DB.Set("IdResult", currentId, data),
                 this.DB.Set("EndIdinId", currentId, upperId),
-                this.DB.pushResult(upperId, data,await this.DB.Get('IndexId',currentId)),
+                this.DB.pushResult(
+                  upperId,
+                  data,
+                  await this.DB.Get("IndexId", currentId)
+                ),
               ]);
 
               let MapResult = await this.DB.getResult(upperId);
               let MapResultLength = await this.DB.getDone(upperId);
-              if (
-                MapResultLength == (await this.DB.Get("IdLength", upperId))
-              ) {
-                this.DB.Set('IdResult',upperId,MapResult)
+              if (MapResultLength == (await this.DB.Get("IdLength", upperId))) {
+                console.log("SSSSSSSSSAAAAAAAAAAAAAAAAAAAAAAAAAA");
+
+                this.DB.Set("IdResult", upperId, MapResult);
                 await this.DB.Set("IdResult", upperId, MapResult);
-                this.onCompleteQueue.add([
-                  await this.DB.Get("TypeId", upperId),
-                   await this.DB.Get("IdinId", upperId),
-                     MapResult,
-                     upperId,
-                     await this.DB.Get('IndexId',upperId)],{removeOnComplete:true})
-               
+                this.onCompleteQueue.add(
+                  [
+                    await this.DB.Get("TypeId", upperId),
+                    await this.DB.Get("IdinId", upperId),
+                    MapResult,
+                    upperId,
+                    await this.DB.Get("IndexId", upperId),
+                  ],
+                  { removeOnComplete: true }
+                );
               }
               break;
             }
             default: {
-
               await this.DB.Set("IdResult", currentId, data);
-              this.onCompleteQueue.add([
-                await this.DB.Get("TypeId", upperId),
-                 await this.DB.Get("IdinId", upperId),
-                   data,
-                   upperId,
-                   index],{removeOnComplete:true})
-              
+              this.onCompleteQueue.add(
+                [
+                  await this.DB.Get("TypeId", upperId),
+                  await this.DB.Get("IdinId", upperId),
+                  data,
+                  upperId,
+                  index,
+                ],
+                { removeOnComplete: true }
+              );
+
               break;
             }
           }
         } else {
           let nextObj = await this.nextDetection(currentId);
-          await this.DB.Set('IdResult',currentId,data)
-        
+          await this.DB.Set("IdResult", currentId, data);
+
           this.startQueue.add([
-           
-              data,
-              nextObj[0],
-              nextObj[0].Type,
-              upperId,
-              nextObj[1],
-              index
-            
-          ])
+            data,
+            nextObj[0],
+            nextObj[0].Type,
+            upperId,
+            nextObj[1],
+            index,
+          ]);
         }
       }
       // }
