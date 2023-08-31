@@ -1,16 +1,31 @@
 {
   "name": "bull-stepfunction",
-  "version": "1.0.6",
+  "version": "1.0.8",
   "description": "run bullQ job like AWS stepfunction",
   "main": "lib/index.js",
   "types":"lib/index.d.ts",
   "files": ["/lib"],
-  "scripts": {
-    "start": "tsc && node lib/main.js",
-    "build": "npx tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": ["aws","stepfunction","workflow","bull","job","bullQ"],
+  "keywords": [
+    "bull",
+    "bullmq",
+    "stepfunction",
+    "queue",
+    "job",
+    "workflow",
+    "async",
+    "background",
+    "task",
+    "processing",
+    "sequence",
+    "job scheduler",
+    "task manager",
+    "job processing",
+    "workflow automation",
+    "task automation",
+    "job execution",
+    "aws stepfunction",
+    "aws"
+  ],  
   "author": "Mohammad Naimi",
   "license": "ISC",
   "devDependencies": {
