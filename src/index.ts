@@ -218,7 +218,7 @@ export class StepFunction extends EventEmitter {
           currentPosPathArr[currentPosPathArr.length - 1],
           next
         );
-
+          
         this.startQueue.add([
           data,
           t(this.workflow, nextpospath).safeObject,

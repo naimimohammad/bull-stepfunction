@@ -1,0 +1,52 @@
+{
+    "StartAt": "GetValue",
+    "States": {
+        
+        "GetValue":{
+            "Type": "Map",
+            "End": true,
+            "ItemsPath":"$.keys",
+            "Iterator": {
+                "StartAt": "Fetch",
+                "States": {
+                    "Fetch": {
+                        "Type": "Task",
+                        "Resource": "GetValue",
+                        "Next": "ConvertToInt"
+                    },
+                    "ConvertToInt": {
+                        "Type": "Task",
+                        "Resource": "ConvertValue",
+                        "Next": "Filter"
+                    },
+                    "NextState":{
+                        "Type": "Pass",
+                        "End": true
+                    },
+                    "DefaulState":{
+                        "Type": "Wait",
+                        "Seconds": 10,
+                        "End": true
+
+                    },
+                    "Filter":{
+                        "Type": "Choice",
+                        "Choices": [
+                            {
+                                
+                                "Variable": "$.result.value",
+                                "NumericGreaterThan": 30,
+                                "Next": "NextState"
+                                
+                            }
+                        ],
+                        "Default": "DefaulState"
+                    }
+
+                   
+                }
+            }
+        }
+        
+    }
+}
