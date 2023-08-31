@@ -4,19 +4,29 @@
         
         "GetValue":{
             "Type": "Map",
-            "End": true,
+            "Next": "Filter",
             "ItemsPath":"$.keys",
             "Iterator": {
-                "StartAt": "Get",
+                "StartAt": "Fetch",
                 "States": {
-                    "Get": {
+                    "Fetch": {
                         "Type": "Task",
                         "Resource": "GetValue",
-                        "End": true
+                        "Next": "ConvertToInt"
+                    },
+                    "ConvertToInt": {
+                        "Type": "Task",
+                        "Resource": "ConvertValue",
+                        "End":true
                     }
                    
                 }
             }
+        },
+        "Filter":{
+            "Type": "Task",
+            "Resource": "FilterValues",
+            "End": true
         }
     }
 }

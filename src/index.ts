@@ -20,6 +20,7 @@ export class StepFunction extends EventEmitter {
   EndIdinId: any = {};
   IdLength: any = {};
   IdResult: any = {};
+  loging: boolean = false;
   DB: any = {};
   onCompleteQueue: any;
   startQueue: any;
@@ -29,6 +30,7 @@ export class StepFunction extends EventEmitter {
     opts = { redis: "redis://127.0.0.1:6381", loging: true }
   ) {
     super();
+    this.loging = opts.loging;
     Object.keys(resources).forEach(jobQ=>{
       resources[jobQ].on('completed',(job:any)=>{
         this.jobComplete(job)
@@ -231,12 +233,12 @@ export class StepFunction extends EventEmitter {
   }
 
   async jobComplete(job: any) {
-    console.log("job has been completed ", job.opts);
     this.onCompleteState(
       "Task",
       await this.DB.Get("IdinId", job.opts.jobId),
       job.data,
-      job.opts.jobId
+      job.opts.jobId,
+      await this.DB.Get("IndexId", job.opts.jobId)
     );
   }
   private sleep(s: number) {
@@ -254,7 +256,7 @@ export class StepFunction extends EventEmitter {
     index?: number
   ) {
     try {
-      console.log(type,upperId,data,currentId,index,"finished ")
+      if (this.loging) console.log(type,upperId,data,currentId,index,"finished ")
       if ((await this.DB.Get("TypeId", currentId)) == "root") {
         await this.DB.Set("IdResult", currentId, data);
         console.log(
@@ -298,6 +300,7 @@ export class StepFunction extends EventEmitter {
               await Promise.all([
                 this.DB.Set("IdResult", currentId, data),
                 this.DB.Set("EndIdinId", currentId, upperId),
+                
                 this.DB.pushResult(
                   upperId,
                   data,
@@ -368,6 +371,7 @@ export class StepFunction extends EventEmitter {
   }
   async nextDetection(Id: string) {
     let tt = await this.DB.Get("PosId", Id);
+    
     let currentJsonData = t(this.workflow, tt).safeObject;
     let currnetPosPathArr = tt.split(".");
     let perPosPath = tt.replace(

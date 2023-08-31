@@ -70,7 +70,7 @@ export class DBCon {
             this.client.LSET(`Result:${Id}`,index,value),
             this.client.incr(`Done:${Id}`)]
         ).catch(e=>{
-            console.log("error:",value,fvalue,e ,Id,index)
+            console.log("error:",value,fvalue,Id,index,e )
         })
        
         
