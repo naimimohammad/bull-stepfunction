@@ -2,6 +2,9 @@
 this example we have 3 queue with some data input
 
 we defined `asl.json` 
+
+![alt text](https://github.com/naimimohammad/bull-stepfunction/blob/master/examples/Map-Task/Map-Task.asl.png?raw=true)
+
 ```json
 {
     "StartAt": "GetValue",
@@ -35,7 +38,12 @@ we defined `asl.json`
         }
     }
 }
+
+
+
 ``` 
+
+
 the process start from `GetValue` and we pass data of 
 
 ```js
