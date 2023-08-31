@@ -1,0 +1,33 @@
+{
+    "StartAt": "Para",
+    "States": {
+        "Para":{
+            "Type": "Parallel",
+            "End": true,
+            "Branches": [
+                {
+                    "StartAt": "Fetch",
+                    "States": {
+                        "Fetch": {
+                            "Type": "Task",
+                            "Resource":
+                            "GetValue",
+                            "End": true
+                        }
+                    }
+                },
+                {
+                    "StartAt": "Sleep",
+                    "States": {
+                        "Sleep": {
+                            "Type": "Wait",
+                            "Seconds": 10,
+                            "End": true
+                        }
+                    }
+                }
+
+            ]
+        }
+    }
+}
