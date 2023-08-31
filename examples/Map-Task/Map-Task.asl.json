@@ -1,0 +1,22 @@
+{
+    "StartAt": "GetValue",
+    "States": {
+        
+        "GetValue":{
+            "Type": "Map",
+            "End": true,
+            "ItemsPath":"$.keys",
+            "Iterator": {
+                "StartAt": "Get",
+                "States": {
+                    "Get": {
+                        "Type": "Task",
+                        "Resource": "GetValue",
+                        "End": true
+                    }
+                   
+                }
+            }
+        }
+    }
+}

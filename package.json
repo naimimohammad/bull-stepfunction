@@ -1,10 +1,12 @@
 {
   "name": "bull-stepfunction",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "run bullQ job like AWS stepfunction",
   "main": "lib/index.js",
-  "types":"lib/index.d.ts",
-  "files": ["/lib"],
+  "types": "lib/index.d.ts",
+  "files": [
+    "/lib"
+  ],
   "keywords": [
     "bull",
     "bullmq",
@@ -25,7 +27,7 @@
     "job execution",
     "aws stepfunction",
     "aws"
-  ],  
+  ],
   "author": "Mohammad Naimi",
   "license": "ISC",
   "devDependencies": {
@@ -38,10 +40,11 @@
     "jsonpath": "^1.1.1"
   },
   "dependencies": {
+    "aws-sf-choice": "^1.0.21",
     "bull": "^4.8.4",
+    "bull-stepfunction": "^1.0.9",
     "redis": "^4.1.0",
-    "typy": "^3.3.0",
-    "aws-sf-choice": "^1.0.21"
+    "typy": "^3.3.0"
   },
   "repository": {
     "type": "git",
