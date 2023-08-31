@@ -49,12 +49,12 @@ export class StepFunction extends EventEmitter {
     this.onCompleteQueue.process(1, async (job: any, done: any) => {
       let data = { ...job.data };
       if (opts?.loging)
-        // console.log(
-        //   `${data[0]} at position ${await this.DB.Get(
-        //     "PosId",
-        //     data[3]
-        //   )} finished`
-        // );
+        console.log(
+          `${data[0]} at position ${await this.DB.Get(
+            "PosId",
+            data[3]
+          )} finished`
+        );
       await this.onCompleteState(data[0], data[1], data[2], data[3], data[4]);
       done();
     });
@@ -115,7 +115,7 @@ export class StepFunction extends EventEmitter {
         for (let [index, datain] of MapData.entries()) {
           let nposPath = `${posPath}.Iterator.States.${jsonData.Iterator.StartAt}`;
           let ntype = t(this.workflow, nposPath).safeObject.Type;
-          this.startQueue.add([
+          await this.startQueue.add([
             datain,
             t(this.workflow, nposPath).safeObject,
             ntype,
@@ -163,19 +163,11 @@ export class StepFunction extends EventEmitter {
           this.DB.Set("PosId", workflowId, posPath),
           this.DB.Set("IndexId", workflowId, index),
         ]);
-        console.log(
-          type,
-          data,
-          upperId,
-          posPath,
-          index,
-          t(this.workflow, posPath).safeObject.Resource,
-          "!!!!!!!!!!!!!!!!!!!!#################"
-        );
+        
         
         // this.resources[jsonData.resources].add(data, { jobId: workflowId });
         try {
-          this.resources[t(this.workflow, posPath).safeObject.Resource].add(
+         await this.resources[t(this.workflow, posPath).safeObject.Resource].add(
             data,
             { jobId: workflowId }
           );
@@ -262,6 +254,7 @@ export class StepFunction extends EventEmitter {
     index?: number
   ) {
     try {
+      console.log(type,upperId,data,currentId,index,"finished ")
       if ((await this.DB.Get("TypeId", currentId)) == "root") {
         await this.DB.Set("IdResult", currentId, data);
         console.log(
@@ -314,9 +307,8 @@ export class StepFunction extends EventEmitter {
 
               let MapResult = await this.DB.getResult(upperId);
               let MapResultLength = await this.DB.getDone(upperId);
-              if (MapResultLength == (await this.DB.Get("IdLength", upperId))) {
-                console.log("SSSSSSSSSAAAAAAAAAAAAAAAAAAAAAAAAAA");
 
+              if (MapResultLength == await this.DB.Get("IdLength", upperId)) {
                 this.DB.Set("IdResult", upperId, MapResult);
                 await this.DB.Set("IdResult", upperId, MapResult);
                 this.onCompleteQueue.add(
@@ -385,4 +377,6 @@ export class StepFunction extends EventEmitter {
 
     return [t(this.workflow, perPosPath).safeObject, perPosPath];
   }
+
+
 }
